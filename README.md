@@ -22,8 +22,8 @@ PayResolve AI deploys specialized collaborative AI agents to handle dispute work
 
 ## 🛠️ Tech Stack
 - **Backend:** Python / FastAPI, Asynchronous Multi-Agent Architecture
-- **AI Core:** Google Gemini 2.5/Flash / LLM function calling & reasoning
-- **Payments:** PayPal REST APIs (v2/checkout/orders, v2/payments/captures, v1/customer/disputes, sandbox mode)
+- **AI Core:** Google Gemini (`gemini-4-argon` & `gemini-3.8-flash` via `google-genai` Interactions API function calling & structured output)
+- **Payments:** PayPal REST APIs (`v2/checkout/orders`, `v2/payments/captures`, `v1/customer/disputes`, sandbox mode)
 - **Frontend:** React / Vite + Tailwind CSS (Interactive Swarm Visualizer & Merchant Console)
 
 ---
@@ -40,6 +40,24 @@ cd PayPal_AI_Hackathon
 Copy `.env.example` to `.env` and supply your credentials:
 ```bash
 cp .env.example .env
+```
+
+### 3. Run the FastAPI Swarm Backend (Port 8000)
+```powershell
+.\venv\Scripts\uvicorn.exe backend.api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+### 4. Run the Interactive Swarm Visualizer UI (Port 5173)
+```powershell
+cd frontend
+npm.cmd install
+npm.cmd run dev
+```
+Open `http://localhost:5173` to explore the split-screen Buyer Conversational Dispute Portal, Live 6-Agent Hub-and-Spoke DAG Visualizer, and Real-Time PayPal Sandbox Settlement Ledger.
+
+### 5. Run the Automated Test Suite
+```powershell
+.\venv\Scripts\pytest.exe tests/ -v
 ```
 
 ---
