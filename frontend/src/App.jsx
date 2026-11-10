@@ -103,15 +103,19 @@ export default function App() {
       'My package has been stuck in transit at the UPS hub for 9 days and never arrived. Can I please get a refund?',
   });
 
-  // Live PayPal Order generator state
+  // Live PayPal Order & Webhook generator state
   const [liveOrderResult, setLiveOrderResult] = useState(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [capturingOrder, setCapturingOrder] = useState(false);
+  const [webhookEvents, setWebhookEvents] = useState([]);
+  const [simulatingWebhook, setSimulatingWebhook] = useState(false);
   const [manualOverrideLoading, setManualOverrideLoading] = useState(false);
 
   // Initial load: Check PayPal Sandbox Status, Load Scenarios, and Run Default Scenario 1
   useEffect(() => {
     fetchPayPalStatus();
     fetchScenariosAndInitialize();
+    fetchWebhookEvents();
   }, []);
 
   async function fetchPayPalStatus() {
@@ -136,6 +140,18 @@ export default function App() {
         const data = await res.json();
         setDisputeHistory(data.items || []);
         if (data.metrics) setMetrics(data.metrics);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  async function fetchWebhookEvents() {
+    try {
+      const res = await fetch('/api/paypal/webhooks/events');
+      if (res.ok) {
+        const data = await res.json();
+        setWebhookEvents(data.events || []);
       }
     } catch {
       // ignore
@@ -271,6 +287,59 @@ export default function App() {
     }
   }
 
+  async function handleCaptureAndDisputeOrder(orderId) {
+    if (!orderId) return;
+    setCapturingOrder(true);
+    setIsRunningSwarm(true);
+    setActiveStepIndex(0);
+    setSelectedAgentId('customer_intake');
+    try {
+      const res = await fetch(`/api/paypal/orders/${orderId}/capture-and-dispute`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentClaim(data.claim);
+        setEmpatheticReply(data.empathetic_intake_reply);
+        setCurrentVerdict(data.verdict);
+        animateSwarmSteps(data.verdict);
+        await fetchDisputesSummary();
+      }
+    } catch (err) {
+      console.error(err);
+      setIsRunningSwarm(false);
+    } finally {
+      setCapturingOrder(false);
+    }
+  }
+
+  async function handleSimulatePayPalWebhook() {
+    setSimulatingWebhook(true);
+    setShowCustomForm(false);
+    setIsRunningSwarm(true);
+    setActiveStepIndex(0);
+    setSelectedAgentId('customer_intake');
+    try {
+      const res = await fetch('/api/paypal/webhooks/simulate', {
+        method: 'POST',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentClaim(data.claim);
+        setEmpatheticReply(data.empathetic_intake_reply);
+        setCurrentVerdict(data.verdict);
+        animateSwarmSteps(data.verdict);
+        await fetchDisputesSummary();
+        await fetchWebhookEvents();
+      }
+    } catch (err) {
+      console.error(err);
+      setIsRunningSwarm(false);
+    } finally {
+      setSimulatingWebhook(false);
+    }
+  }
+
   async function handleMerchantManualApproveRefund() {
     if (!currentClaim) return;
     setManualOverrideLoading(true);
@@ -382,6 +451,16 @@ export default function App() {
               </button>
             </div>
 
+            {/* Simulate PayPal Webhook Button */}
+            <button
+              onClick={handleSimulatePayPalWebhook}
+              disabled={simulatingWebhook || isRunningSwarm}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-sky-300 border border-sky-500/40 shadow-md transition-all disabled:opacity-50"
+            >
+              <Activity className="w-3.5 h-3.5 text-sky-400" />
+              {simulatingWebhook ? 'Receiving Webhook...' : 'Simulate PayPal Webhook'}
+            </button>
+
             {/* Create Live Sandbox Order Button */}
             <button
               onClick={handleCreateSandboxOrder}
@@ -396,7 +475,7 @@ export default function App() {
 
         {/* Optional Live Order Created Toast Banner */}
         {liveOrderResult && (
-          <div className="max-w-[1440px] mx-auto mt-3 p-3 rounded-xl bg-blue-950/60 border border-sky-500/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="max-w-[1440px] mx-auto mt-3 p-3.5 rounded-xl bg-blue-950/70 border border-sky-500/40 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
@@ -406,20 +485,29 @@ export default function App() {
                 <code className="text-slate-300">POST /v2/checkout/orders</code>
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               {liveOrderResult.links?.find((l) => l.rel === 'approve') && (
                 <a
                   href={liveOrderResult.links.find((l) => l.rel === 'approve').href}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-sky-300 hover:text-sky-200 underline font-medium"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-500/20 border border-sky-400/40 text-sky-200 hover:bg-sky-500/30 font-semibold"
                 >
-                  Open PayPal Sandbox Checkout <ExternalLink className="w-3 h-3" />
+                  1. Approve as Buyer in Sandbox <ExternalLink className="w-3 h-3" />
                 </a>
               )}
               <button
+                onClick={() => handleCaptureAndDisputeOrder(liveOrderResult.id)}
+                disabled={capturingOrder || isRunningSwarm}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-colors disabled:opacity-50"
+              >
+                {capturingOrder
+                  ? 'Capturing & Running Swarm...'
+                  : '2. Capture & Trigger Swarm Refund'}
+              </button>
+              <button
                 onClick={() => setLiveOrderResult(null)}
-                className="text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800"
+                className="text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800"
               >
                 Dismiss
               </button>
@@ -991,6 +1079,56 @@ export default function App() {
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* 5. PAYPAL ASYNCHRONOUS WEBHOOK EVENT LOGS (EDDIE'S SANDBOX WORKSHOP FEATURE) */}
+        {webhookEvents.length > 0 && (
+          <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  PayPal Sandbox Webhook Event Logs (POST /api/paypal/webhooks)
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-emerald-400">
+                HTTP 200 OK Auto-Acknowledged
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 text-[11px] text-slate-400 uppercase font-mono">
+                    <th className="py-2 px-3">Webhook ID</th>
+                    <th className="py-2 px-3">Event Type</th>
+                    <th className="py-2 px-3">PayPal Dispute ID</th>
+                    <th className="py-2 px-3">HTTP Ack</th>
+                    <th className="py-2 px-3">Swarm Resolution</th>
+                    <th className="py-2 px-3">PayPal Settlement ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {webhookEvents.map((ev) => (
+                    <tr key={ev.webhook_id} className="hover:bg-slate-800/40">
+                      <td className="py-2 px-3 font-mono text-sky-300">{ev.webhook_id}</td>
+                      <td className="py-2 px-3 font-mono text-amber-300">{ev.event_type}</td>
+                      <td className="py-2 px-3 font-mono text-slate-200">{ev.dispute_id}</td>
+                      <td className="py-2 px-3 font-mono">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          {ev.http_status_returned} OK
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 font-mono text-slate-200">{ev.swarm_action}</td>
+                      <td className="py-2 px-3 font-mono text-emerald-300">
+                        {ev.paypal_refund_id || '—'}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -134,3 +134,13 @@ class SimulationResultResponse(BaseModel):
     claim: DisputeClaim
     verdict: ResolutionVerdict
 
+
+class PayPalWebhookPayload(BaseModel):
+    id: str = "WH-2026-SANDBOX-99102"
+    event_type: str = "CUSTOMER.DISPUTE.CREATED"
+    resource_type: str = "dispute"
+    summary: str = "A new customer dispute was created in PayPal Sandbox"
+    resource: Dict[str, Any] = Field(default_factory=dict)
+    create_time: Optional[str] = None
+
+

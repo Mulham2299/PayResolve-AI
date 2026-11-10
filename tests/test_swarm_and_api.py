@@ -89,3 +89,64 @@ async def test_all_four_swarm_scenarios():
         assert metrics["fraud_blocked_usd"] == 215.00
         assert metrics["chargeback_fees_saved_usd"] == 60.00
 
+
+@pytest.mark.asyncio
+async def test_paypal_webhooks_and_live_order_dispute_loop():
+    transport = ASGITransport(app=app)
+    from backend.api.routes import swarm
+    swarm._client = None
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. Test simulated PayPal CUSTOMER.DISPUTE.CREATED webhook
+        wh_sim = await ac.post("/api/paypal/webhooks/simulate")
+        assert wh_sim.status_code == 200
+        wh_data = wh_sim.json()
+        assert wh_data["verdict"]["action"] == ResolutionAction.AUTO_REFUND_FULL.value
+        assert wh_data["verdict"]["paypal_refund_id"].startswith("PP-RFD-")
+
+        # 2. Test direct POST /api/paypal/webhooks endpoint
+        raw_wh = await ac.post(
+            "/api/paypal/webhooks",
+            json={
+                "id": "WH-TEST-998877",
+                "event_type": "CUSTOMER.DISPUTE.CREATED",
+                "resource_type": "dispute",
+                "summary": "Dispute created in Sandbox",
+                "resource": {
+                    "dispute_id": "PP-D-554433",
+                    "reason": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+                    "dispute_amount": {"value": "59.00", "currency_code": "USD"},
+                    "buyer_email": "sarah.connor@example.com",
+                    "tracking_number": "1Z999AA10123456784",
+                },
+            },
+        )
+        assert raw_wh.status_code == 200
+        assert raw_wh.json()["http_code"] == 200
+        assert raw_wh.json()["webhook_event"]["http_status_returned"] == 200
+
+        # 3. Verify webhook events log
+        ev_list = await ac.get("/api/paypal/webhooks/events")
+        assert ev_list.status_code == 200
+        assert ev_list.json()["count"] >= 2
+
+        # 4. Create a live PayPal Sandbox Order and run Capture-and-Dispute loop
+        order_resp = await ac.post(
+            "/api/paypal/orders",
+            json={
+                "amount_value": "45.00",
+                "currency_code": "USD",
+                "description": "Pytest Live Sandbox Order",
+            },
+        )
+        assert order_resp.status_code == 200
+        order_id = order_resp.json()["id"]
+        assert order_id is not None
+
+        cap_dispute_resp = await ac.post(f"/api/paypal/orders/{order_id}/capture-and-dispute")
+        assert cap_dispute_resp.status_code == 200
+        cd_data = cap_dispute_resp.json()
+        assert cd_data["verdict"]["action"] == ResolutionAction.AUTO_REFUND_FULL.value
+        assert cd_data["verdict"]["paypal_refund_id"].startswith("PP-RFD-")
+
+
