@@ -297,28 +297,28 @@ def build_pdf(filename="PayResolve_AI_Research_and_Roadmap.pdf"):
         ],
         [
             Paragraph("<b>Phase 1: Backend</b>", table_cell_style),
-            Paragraph("FastAPI endpoints, PayPal REST client (Captures, Refunds, Disputes), mock carrier tracking.", table_cell_style),
-            Paragraph("Next to execute", table_cell_style)
+            Paragraph("FastAPI endpoints, PayPal REST client (Captures, Refunds, Disputes, Orders), carrier tracking.", table_cell_style),
+            Paragraph("<font color='#059669'><b>COMPLETED & VERIFIED</b></font>", table_cell_style)
         ],
         [
             Paragraph("<b>Phase 2: Swarm Core</b>", table_cell_style),
-            Paragraph("Gemini 2.5 Flash agent tools, structured schema outputs, risk scoring algorithm, arbiter synthesis.", table_cell_style),
-            Paragraph("Planned (Ready to build)", table_cell_style)
+            Paragraph("6-Agent Gemini Swarm (Intake, Evidence, Fraud, Policy, Arbiter, PayPal Settlement).", table_cell_style),
+            Paragraph("<font color='#059669'><b>COMPLETED & VERIFIED</b></font>", table_cell_style)
         ],
         [
             Paragraph("<b>Phase 3: Visualizer UI</b>", table_cell_style),
-            Paragraph("React + Vite + Tailwind CSS: Split screen with buyer dispute chat and live multi-agent DAG reasoning view.", table_cell_style),
-            Paragraph("Planned", table_cell_style)
+            Paragraph("React + Vite + Tailwind CSS: Split screen with buyer dispute chat and live 6-agent DAG view.", table_cell_style),
+            Paragraph("<font color='#059669'><b>COMPLETED & VERIFIED</b></font>", table_cell_style)
         ],
         [
-            Paragraph("<b>Phase 4: QA & Polish</b>", table_cell_style),
-            Paragraph("Automated test scenarios (clean claim, partial refund, fraudulent claim, human escalation).", table_cell_style),
-            Paragraph("Planned", table_cell_style)
+            Paragraph("<b>Phase 4: QA & Webhooks</b>", table_cell_style),
+            Paragraph("PayPal Webhook receiver, Live Order Capture-to-Refund flow, and 4 automated pytest suites.", table_cell_style),
+            Paragraph("<font color='#059669'><b>COMPLETED & VERIFIED</b></font>", table_cell_style)
         ],
         [
             Paragraph("<b>Phase 5: Submission</b>", table_cell_style),
             Paragraph("3-minute demo video (YouTube), Devpost final sync, GitHub README screenshots.", table_cell_style),
-            Paragraph("Target: Before Nov 12", table_cell_style)
+            Paragraph("Next: Ready to Record & Submit", table_cell_style)
         ]
     ]
 
