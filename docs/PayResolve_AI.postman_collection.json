@@ -1,0 +1,170 @@
+{
+  "info": {
+    "_postman_id": "a9e42b10-55d1-4b2c-98c0-payresolve2026",
+    "name": "PayResolve AI — Multi-Agent Dispute & PayPal Sandbox API Collection",
+    "description": "Official Postman Collection for testing PayResolve AI's 6-Agent Dispute Resolution Swarm, Live PayPal Sandbox OAuth2, Orders, Captures, Refunds, and Asynchronous Webhooks (PayPal AI Hackathon 2026).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & Live PayPal Sandbox Status",
+      "item": [
+        {
+          "name": "GET /health — Backend & Env Configuration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/paypal/status — Verify Live PayPal Sandbox OAuth2 & Disputes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/paypal/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "paypal", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. 6-Agent Swarm Simulation Scenarios (Happy & Unhappy Paths)",
+      "item": [
+        {
+          "name": "Scenario 1: Lost Package — Instant Full Auto-Refund ($89.99)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/disputes/simulate/clean_inr_refund",
+              "host": ["{{base_url}}"],
+              "path": ["api", "disputes", "simulate", "clean_inr_refund"]
+            }
+          }
+        },
+        {
+          "name": "Scenario 2: Cosmetic Damage — 40% Partial Concession ($48.00)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/disputes/simulate/damaged_partial_refund",
+              "host": ["{{base_url}}"],
+              "path": ["api", "disputes", "simulate", "damaged_partial_refund"]
+            }
+          }
+        },
+        {
+          "name": "Scenario 3: Opportunistic Fraud — Claim Rejected ($0.00)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/disputes/simulate/fraud_claim_rejected",
+              "host": ["{{base_url}}"],
+              "path": ["api", "disputes", "simulate", "fraud_claim_rejected"]
+            }
+          }
+        },
+        {
+          "name": "Scenario 4: High-Value ($480.00) — Escalate to Human Merchant",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/disputes/simulate/high_value_escalation",
+              "host": ["{{base_url}}"],
+              "path": ["api", "disputes", "simulate", "high_value_escalation"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Live PayPal Sandbox Orders, Captures & Webhooks",
+      "item": [
+        {
+          "name": "POST /api/paypal/orders — Create Live PayPal Sandbox Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_value\": \"89.99\",\n  \"currency_code\": \"USD\",\n  \"description\": \"PayResolve AI Sandbox Test Order\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/paypal/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "paypal", "orders"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/paypal/webhooks/simulate — Simulate CUSTOMER.DISPUTE.CREATED Webhook",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/paypal/webhooks/simulate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "paypal", "webhooks", "simulate"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/paypal/webhooks — Receive Raw PayPal Webhook Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"WH-SANDBOX-2026-001\",\n  \"event_type\": \"CUSTOMER.DISPUTE.CREATED\",\n  \"resource_type\": \"dispute\",\n  \"summary\": \"A new customer dispute was created in PayPal Sandbox\",\n  \"resource\": {\n    \"dispute_id\": \"PP-D-90128\",\n    \"reason\": \"MERCHANDISE_OR_SERVICE_NOT_RECEIVED\",\n    \"dispute_amount\": {\n      \"value\": \"74.50\",\n      \"currency_code\": \"USD\"\n    },\n    \"buyer_email\": \"sarah.connor@example.com\",\n    \"tracking_number\": \"1Z999AA10123456784\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/paypal/webhooks",
+              "host": ["{{base_url}}"],
+              "path": ["api", "paypal", "webhooks"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/disputes — Merchant Audit Ledger & Financial KPIs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/disputes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "disputes"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -110,3 +110,4 @@ Single-prompt financial chatbots are vulnerable to **prompt injection**, **emoti
 - **2:20 – 2:45 | Live PayPal Webhooks & Order Creation:**
   - *(Click 'Simulate PayPal Webhook' and 'Create Live PayPal Order' in the top header)*
   - *"Finally, PayResolve AI listens to asynchronous `CUSTOMER.DISPUTE.CREATED` PayPal Webhooks—acknowledging with HTTP 200 OK and resolving claims automatically—and supports live PayPal Sandbox Order creation and capture. Thank you!"*
+
