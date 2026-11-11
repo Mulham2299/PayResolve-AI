@@ -449,3 +449,4 @@ if __name__ == "__main__":
         else "docs/PayResolve_AI_Video_Script_and_Recording_Guide.pdf"
     )
     build_video_guide_pdf(output_path)
+
